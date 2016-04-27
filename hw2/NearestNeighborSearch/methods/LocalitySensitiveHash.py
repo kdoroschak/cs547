@@ -1,8 +1,8 @@
 import math
-
 import methods.Helper as Helper
 from methods.NeighborDistance import NeighborDistance
 import util.EvalUtil as EvalUtil
+import numpy as np
 
 
 class LocalitySensitiveHash(object):
@@ -65,7 +65,7 @@ class LocalitySensitiveHash(object):
             return cur_nearest
         if cur_nearest is None:
             cur_nearest = NeighborDistance(0, float("inf"))
-        self.check_bin(document, hashed_document, cur_nearest)
+        cur_nearest = self.check_bin(document, hashed_document, cur_nearest)
         if depth > 0:
             # check the bins one away from the current bin
             # if we still have more depth to go
@@ -78,17 +78,32 @@ class LocalitySensitiveHash(object):
 
     def check_bin(self, document, hashed_document, cur_nearest):
         """
-        Checks the documents that are hashsed to the given bin and updates with
+        Checks the documents that are hashed to the given bin and updates with
         nearest neighbor found.
-        @param document: dict[int => int/float] - list of documents
+        @param document: dict[int => int/float] - a document
         @param hashed_document: [bool] - hashed document
         @param cur_nearest: NeighborDistance - the currently (approximately) nearest neighbor
         """
         # TODO: Fill in code for checking a bin for the nearest neighbor
         #       Code should look through all the documents in a bin and
         #       update cur_nearest with the nearest one found, if closer than cur_nearest already is
-        raise Exception("Please implement the LocalitySensitiveHash.check_bin method")
 
+        bin = self.convert_boolean_array_to_integer(hashed_document)
+        if self.hashed_documents.get(bin) is not None:
+            neighbor_docs = self.hashed_documents[bin]
+        else:
+            return cur_nearest
+
+        cur_dist = cur_nearest.distance
+
+        for neighbor_doc in neighbor_docs:
+            distance = EvalUtil.distance(document, self.documents[neighbor_doc])
+            if distance < cur_dist:
+                cur_dist = distance
+                cur_nearest = NeighborDistance(neighbor_doc, cur_dist)
+
+        # print cur_nearest.doc_id, cur_nearest.distance
+        return cur_nearest
 
     def get_bin(self, document):
         """
@@ -104,8 +119,10 @@ class LocalitySensitiveHash(object):
         @param document: dict[int => int/float] - a document
         """
         hashed_document = [False for _ in xrange(self.m)]
-        # TODO: fill in code for creating the hashed document
-        raise Exception("Please implement the LocalitySensitiveHash.hash_document method")
+        
+        for m,vector in enumerate(self.projection_vectors):
+            hashed_document[m] = self.project_document(document, vector)
+
         return hashed_document
 
 
@@ -116,9 +133,16 @@ class LocalitySensitiveHash(object):
         @param vector: [float] - a projection vector
         """
         dotprod = 0.0
-        # TODO: fill in code for projecting the document
-        raise Exception("Please implement the LocalitySensitiveHash.project_document method")
-        return False
+        
+        for term in document.keys():
+            dotprod += document[term] * vector[term-1]
+
+        if dotprod > 0:
+            result = True
+        else:
+            result = False
+
+        return result
 
 
     def convert_boolean_array_to_integer(self, bool_array):

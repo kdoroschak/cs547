@@ -38,5 +38,21 @@ def test_kd_tree(n, D, n_test, alphas):
 
 
 if __name__ == "__main__":
-    pass
+    n = 100000
+    D = 1000
+    n_test = 5000
     # TODO: run tests here
+
+    alphas = [5., 10., 20.]
+    times = test_kd_tree(n, D, n_test, alphas)
+
+    print times
+
+    # for m in [5, 10, 20]:
+        # lsh = LocalitySensitiveHash(docdata, D, m)
+        # test = lsh.nearest_neighbor(testdata[1], 3)
+
+    # test_kd_tree()
+    # pass
+    # TODO: run tests here
+
