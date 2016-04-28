@@ -3,7 +3,6 @@ from kdtree.KDTree import KDTree
 from methods.NeighborDistance import NeighborDistance
 import util.EvalUtil as EvalUtil
 
-
 class GaussianRandomProjection(object):
     """
     @ivar documents: dict[int => dict[int => int/float]] list of documents
@@ -47,9 +46,11 @@ class GaussianRandomProjection(object):
         Hashes a document using the random projections
         @param document: dict[int => int/float] - document represented as dictionary of word ids => counts
         """
-        hashed_document = [0.0 for _ in self.m]
-        # TODO: hash/project the document onto the "m" gaussian random projections
-        raise Exception("Please implement the GaussianRandomProjection.hash_document method")
+        hashed_document = [0.0 for _ in xrange(self.m)]
+        
+        for m,vector in enumerate(self.projection_vectors):
+            hashed_document[m] = self.project_document(document, vector)
+
         return hashed_document
 
 
@@ -60,6 +61,31 @@ class GaussianRandomProjection(object):
         @param vector: [float] - a vector on which to project the document
         """
         dotprod = 0.0
-        # TODO: fill in code for projecting the document
-        raise Exception("Please implement the GaussianRandomProjection.project_document method")
+        
+        for term in document.keys():
+            dotprod += document[term] * vector[term-1]
+
         return dotprod
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

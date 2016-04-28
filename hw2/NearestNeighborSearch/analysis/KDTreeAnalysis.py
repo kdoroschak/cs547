@@ -24,23 +24,28 @@ def test_kd_tree(n, D, n_test, alphas):
         key = [document.get(idx) for idx in xrange(0, D)]
         rand_tree.insert(key, i)
 
+    print "Finished making random tree."
+
     times = []
     for alpha in alphas:
+        print "Running for alpha", alpha
         start_time = time.clock()
         cum_dist = 0.0
+        print "Setting up test documents or whatever this is.."
         for i, test_document in test_documents.iteritems():
             key = [test_document.get(idx) for idx in xrange(0, D)]
             doc_id = rand_tree.nearest(key, alpha)
             cum_dist += EvalUtil.distance(test_document, documents[doc_id])
+        print "Finished."
         duration = time.clock() - start_time
         times.append(TestResult("KDTree", n, D, alpha, duration / n_test, cum_dist / n_test))
     return times
 
 
 if __name__ == "__main__":
-    n = 100000
+    n = 10000
     D = 1000
-    n_test = 5000
+    n_test = 500
     # TODO: run tests here
 
     alphas = [5., 10., 20.]

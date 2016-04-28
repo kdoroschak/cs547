@@ -15,5 +15,8 @@ if __name__ == '__main__':
     # TODO: run tests here
 
     for m in [5, 10, 20]:
-    	lsh = LocalitySensitiveHash(docdata, D, m)
-    	test = lsh.nearest_neighbor(testdata[1], 3)
+    	# lsh = LocalitySensitiveHash(docdata, D, m)
+    	# test = lsh.nearest_neighbor(testdata[1], 3)
+
+    	grp = GaussianRandomProjection(docdata, D, m)
+    	test = grp.nearest_neighbor(testdata[1], 3)
