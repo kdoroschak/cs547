@@ -84,19 +84,19 @@ if __name__ == '__main__':
   training = DataSet(rootpath+"data/train.txt", True, training_size)
   testing = DataSet(rootpath+"data/test.txt", False, testing_size)
 
-  # # calculates the average CTR for the training data
-  # print "Average CTR for training data: ", basic.average_ctr(training)
+  # calculates the average CTR for the training data
+  print "Average CTR for training data: ", basic.average_ctr(training)
 
-  # # counts the number of unique tokens in the training set
-  # uniq_tok_train = basic.uniq_tokens(training)
-  # print len(uniq_tok_train), "unique tokens in the training set."
+  # counts the number of unique tokens in the training set
+  uniq_tok_train = basic.uniq_tokens(training)
+  print len(uniq_tok_train), "unique tokens in the training set."
   
-  # # counts the number of unique tokens in the testing set
-  # uniq_tok_test = basic.uniq_tokens(testing)
-  # print len(uniq_tok_test), "unique tokens in the testing set."
+  # counts the number of unique tokens in the testing set
+  uniq_tok_test = basic.uniq_tokens(testing)
+  print len(uniq_tok_test), "unique tokens in the testing set."
 
-  # # count number of tokens appearing in both sets
-  # print len(uniq_tok_train.intersection(uniq_tok_test)), "unique tokens appear in both datasets."
+  # count number of tokens appearing in both sets
+  print len(uniq_tok_train.intersection(uniq_tok_test)), "unique tokens appear in both datasets."
 
   # calculates unique users in each age group
   print basic.uniq_users_per_age_group(training), "unique users in each age group of the training set."
