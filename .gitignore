@@ -8,3 +8,13 @@ hw1/ClickPrediction.zip
 *.csv
 
 *.png
+
+hw2/kmeans/bbc_data.zip
+
+hw2/kmeans/bbc.centers
+
+hw2/kmeans/bbc.classes
+
+hw2/kmeans/bbc.terms
+
+hw2/kmeans/sim_docdata.zip
