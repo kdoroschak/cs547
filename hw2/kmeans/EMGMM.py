@@ -3,6 +3,7 @@ import random
 from scipy.stats import multivariate_normal
 from matplotlib.patches import Ellipse
 from matplotlib import pyplot as plt
+from scipy.misc import logsumexp
 from TermDocumentUtil import TermDocument
 from ErrorUtil import ErrorModel
 
@@ -55,12 +56,13 @@ class EMGMM:
 		w = np.zeros((N,k),np.float64)
 		for i in range(N):
 			for k in range(len(pi)):
-				w[i,k] = pi[k] * self.mvn(x[i,:], mu[k], cov[k])
-		sum_w = np.sum(w, axis=1)
+				w[i,k] = np.log(pi[k]) + self.logmvn(x[i,:], mu[k], cov[k])
+		sum_w = np.sum(np.exp(w), axis=1)
 		for k in range(len(pi)):
-			w[:,k] /= sum_w
+			w[:,k] -= np.log(sum_w)
 		assert w.shape == (N,len(pi))
 		# TODO need to fix underflow :( :( :(
+		w = np.exp(w)
 		return w
 
 	def compute_means(self, w, x):
@@ -93,6 +95,10 @@ class EMGMM:
 	def mvn(self,x,mu,cov):
 		var = multivariate_normal(mean=mu, cov=cov, allow_singular=True)
 		return var.pdf(x)
+
+	def logmvn(self,x,mu,cov):
+		var = multivariate_normal(mean=mu, cov=cov, allow_singular=True)
+		return var.logpdf(x)
 
 	def gmm(self, max_iter=100):
 		converged = False
@@ -181,7 +187,7 @@ class EMGMM:
 
 
 def main():
-	run_section = "2d_gaussian"
+	run_section = "bbc"
 
 	if run_section == "2d_gaussian":
 		# Load data
@@ -215,7 +221,7 @@ def main():
 
 		# Run kmeans
 		em = EMGMM(len(centers), data, classes)
-		likelihood, error = em.gmm(max_iter=2)
+		likelihood, error = em.gmm(max_iter=15)
 
 		# Plot likelihoods
 		fig, ax = plt.subplots()
