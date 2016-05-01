@@ -98,6 +98,7 @@ class EMGMM:
 		converged = False
 		iteration = 0
 		errors = []
+		likelihood = []
 		while not converged and iteration < max_iter:
 			iteration += 1
 			print "iteration:", iteration
@@ -112,11 +113,15 @@ class EMGMM:
 			# TODO implement log-likelihood function and use it to determine convergence
 			# if assignments_changed == False:
 				# converged=True
+			# ll = self.log_likelihood(self.x, self.pi, self.mu, self.cov)
+			ll = 0.
+			likelihood.append(ll)
+
 			self.assign_clusters(self.w)
 			err = ErrorModel(self.predicted_labels, self.actual_labels).zero_one_loss()
 			errors.append(err) 
 
-		return errors
+		return likelihood, errors
 
 	def assign_clusters(self, w):
 		clusters = np.argmax(w, axis=1)
@@ -158,7 +163,8 @@ class EMGMM:
 			x1 = np.array(clusters[k]).T[0]
 			x2 = np.array(clusters[k]).T[1]
 			if x1.size > 0 and x2.size > 0: # Can happen for large K
-				plt.scatter(x1, x2, figure=fig, color=colors[k])#random.choice(colors))
+				plt.scatter(x1, x2, figure=fig, color=colors[k])
+				plt.scatter(self.mu[k,0], self.mu[k,1], figure=fig, color='black', marker="+")
 				center = (self.mu[k,0], self.mu[k,1])
 				eigvals, eigvecs = np.linalg.eigh(self.cov[k])
         		eigvecs[eigvals.argsort()[::-1]]
@@ -175,7 +181,7 @@ class EMGMM:
 
 
 def main():
-	run_section = "bbc"
+	run_section = "2d_gaussian"
 
 	if run_section == "2d_gaussian":
 		# Load data
@@ -185,11 +191,18 @@ def main():
 		labels = [int(x) - int(min(labels)) for x in labels] 
 		points = data[:,1:]
 
-		k = 6
+		k = 3
 		em = EMGMM(k, points, labels)
-		em.gmm(max_iter=100)
+		likelihood, error = em.gmm(max_iter=100)
 		labels = em.assign_clusters(em.w)
-		em.plot_clustering_2D()
+		em.plot_clustering_2D(savefile="2d_gmm.png")
+
+		# Plot likelihoods
+		fig, ax = plt.subplots()
+		ax.plot(range(len(likelihood)),likelihood)
+		plt.xlabel("Number of iterations")
+		plt.ylabel("Likelihood")
+		plt.savefig("2d_gmm_ll.png")
 
 	if run_section == "bbc":
 		# Load data
@@ -202,11 +215,18 @@ def main():
 
 		# Run kmeans
 		em = EMGMM(len(centers), data, classes)
-		error = em.gmm(max_iter=3)
+		likelihood, error = em.gmm(max_iter=2)
+
+		# Plot likelihoods
+		fig, ax = plt.subplots()
+		ax.plot(range(len(likelihood)),likelihood)
+		plt.xlabel("Number of iterations")
+		plt.ylabel("Likelihood")
+		plt.savefig("bbc_gmm_ll.png")
 
 		# Plot classification error
 		fig, ax = plt.subplots()
-		plt.plot(range(len(error)), error)
+		ax.plot(range(len(error)), error)
 		plt.xlabel("Number of iterations")
 		plt.ylabel("Classification error (0/1 loss)")
 		plt.savefig("bbc_gmm_01loss.png")
