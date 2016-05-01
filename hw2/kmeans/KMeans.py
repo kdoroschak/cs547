@@ -4,12 +4,14 @@ import scipy.io as sio
 from scipy.spatial import distance
 from matplotlib import pyplot as plt
 from TermDocumentUtil import TermDocument
+from ErrorUtil import ErrorModel
 
 class KMeans:
 	def __init__(self, k, Z, x, init_method="random_init_centers", centers=None):
 		pass
 		self.k = k
-		self.Z = Z # cluster assignments (len(Z) == len(x))
+		self.Z_actual = Z
+		self.Z = np.zeros_like(Z) # cluster assignments (len(Z) == len(x))	
 		self.x = x # data points -- list of tuples
 		if init_method == "random_init_centers":
 			self.mu = self.random_init_centers(k, x)
@@ -61,10 +63,11 @@ class KMeans:
 
 	def calculate_centers(self, Z, x):
 		mu = np.zeros((self.k, x.shape[1]))
-		cluster_count = [0 for _ in xrange(self.k)]
+		cluster_count = [1 for _ in xrange(self.k)]
 		for i,z in enumerate(Z):
 			mu[z]+=x[i]
 			cluster_count[z]+=1
+
 		mu[:,0] = np.divide(mu[:,0],cluster_count)
 		mu[:,1] = np.divide(mu[:,1],cluster_count)
 		return mu
@@ -72,6 +75,7 @@ class KMeans:
 	def run_kmeans(self,max_iter=150):
 		converged = False
 		iteration = 0
+		errors = []
 		while not converged and iteration < max_iter:
 			iteration += 1
 			print "iteration:", iteration
@@ -83,7 +87,10 @@ class KMeans:
 
 			if assignments_changed == False:
 				converged=True
-		return
+
+			err = ErrorModel(self.Z, self.Z_actual).zero_one_loss()
+			errors.append(err) 
+		return errors
 
 	def plot_clustering_2D(self, savefile="plot.png"):
 		self.plot_clustering_2D_(self.mu, self.Z, self.x, savefile=savefile)
@@ -207,7 +214,14 @@ def main():
 
 		# Run kmeans
 		kmeans = KMeans(len(centers), classes, data, "given", centers=centers)
-		kmeans.run_kmeans(max_iter=5)
+		error = kmeans.run_kmeans(max_iter=5)
+
+		# Plot classification error
+		fig, ax = plt.subplots()
+		plt.plot(range(len(error)), error)
+		plt.xlabel("Number of iterations")
+		plt.ylabel("Classification error (0/1 loss)")
+		plt.savefig("bbc_kmeans_01loss.png")
 
 
 
