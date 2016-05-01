@@ -6,6 +6,7 @@ class ErrorModel:
 		"""
 		self.predicted = predicted
 		self.actual = actual
+		self.N = len(predicted)
 
 
 	# ====== Binary classification error ======
@@ -15,7 +16,7 @@ class ErrorModel:
 		TN = 0.
 		FP = 0.
 		FN = 0.
-		for i in range(len(self.predicted)):
+		for i in range(self.N):
 			if   self.predicted[i] == 1 and self.actual[i] == 1:
 				TP += 1
 			elif self.predicted[i] == 0 and self.actual[i] == 0:
@@ -28,4 +29,10 @@ class ErrorModel:
 		return acc
 
 	def zero_one_loss(self):
-		return
+		loss = 0
+		for i in range(self.N):
+			if self.predicted[i] == 1 and self.actual[i] == 1:
+				loss += 1
+			elif self.predicted[i] == 0 and self.actual[i] == 0:
+				loss += 1
+		return loss
