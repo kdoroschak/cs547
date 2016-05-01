@@ -54,9 +54,8 @@ class EMGMM:
 		N,d = x.shape
 		k = len(pi)
 		w = np.zeros((N,k),np.float64)
-		for i in range(N):
-			for k in range(len(pi)):
-				w[i,k] = np.log(pi[k]) + self.logmvn(x[i,:], mu[k], cov[k])
+		for k in range(len(pi)):
+			w[:,k] = np.log(pi[k]) + self.logmvn(x, mu[k], cov[k])
 		sum_w = np.sum(np.exp(w), axis=1)
 		for k in range(len(pi)):
 			w[:,k] -= np.log(sum_w)
