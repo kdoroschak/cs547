@@ -8,7 +8,6 @@ from ErrorUtil import ErrorModel
 
 class KMeans:
 	def __init__(self, k, Z, x, init_method="random_init_centers", centers=None):
-		pass
 		self.k = k
 		self.Z_actual = Z
 		self.Z = np.zeros_like(Z) # cluster assignments (len(Z) == len(x))	
@@ -99,7 +98,7 @@ class KMeans:
 	def plot_clustering_2D_(self, mu, Z, x, savefile="plot.png"):
 		print "plotting clusters..."
 		clusters = [[] for _ in xrange(self.k)]
-		# this will run out of colors for k>21 #from tableau20 + black so far
+		# Tableau colors! Need to make a plotting helper someday to not have to do this...
 		colors = [(0.12156, 0.46666, 0.70588),
 				 (1.00000, 0.49803, 0.05490), 
 				 (0.17254, 0.62745, 0.17254), 
@@ -161,7 +160,7 @@ class KMeans:
 		return ss
 
 def main():
-	run_section = "bbc"
+	run_section = "partc_d"
 
 	if run_section == "partb":
 		# Load data
@@ -191,7 +190,7 @@ def main():
 		ss = np.zeros((number_of_runs,3))
 		centers = []
 		for run_i in range(number_of_runs):
-			kmeans = KMeans(3, labels, points)#, "kmeans_plus_plus_init")
+			kmeans = KMeans(3, labels, points, "kmeans_plus_plus_init")
 			kmeans.run_kmeans(max_iter=25)
 			centers += list(kmeans.mu)
 			ss[run_i,:] = kmeans.within_cluster_ss(kmeans.mu, kmeans.Z, kmeans.x)
