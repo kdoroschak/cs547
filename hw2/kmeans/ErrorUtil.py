@@ -31,8 +31,12 @@ class ErrorModel:
 	def zero_one_loss(self):
 		loss = 0
 		for i in range(self.N):
-			if self.predicted[i] == 1 and self.actual[i] == 1:
+			if self.predicted[i] == self.actual[i]: # TODO verify
 				loss += 1
-			elif self.predicted[i] == 0 and self.actual[i] == 0:
-				loss += 1
+		return loss
+
+
+	# ====== Multiclass classification error ======
+	def zero_one_loss_multiclass(self):
+		loss = 0
 		return loss

@@ -56,17 +56,16 @@ class EMGMM:
 		w = np.zeros((N,k),np.float64)
 		for k in range(len(pi)):
 			w[:,k] = np.log(pi[k]) + self.logmvn(x, mu[k], cov[k])
-		sum_w = np.sum(np.exp(w), axis=1)
+		sum_w = np.sum(np.exp(w), axis=1) + 1
 		for k in range(len(pi)):
 			w[:,k] -= np.log(sum_w)
 		assert w.shape == (N,len(pi))
-		# TODO need to fix underflow :( :( :(
 		w = np.exp(w)
 		return w
 
 	def compute_means(self, w, x):
 		mu = w.T.dot(x)
-		w_sum = np.sum(w, axis=0)
+		w_sum = np.sum(w, axis=0) + 1
 		for d in range(mu.shape[1]):
 			mu[:,d] /= w_sum
 		assert len(mu) == np.shape(w)[1]
@@ -99,11 +98,29 @@ class EMGMM:
 		var = multivariate_normal(mean=mu, cov=cov, allow_singular=True)
 		return var.logpdf(x)
 
-	def gmm(self, max_iter=100):
+	def log_likelihood(self, x, mu, cov, pi):
+		ll = 0.
+		for i in range(x.shape[0]):
+			inner = 1.
+			for k in range(len(mu)):
+				inner += pi[k] * self.mvn(x[i,:], mu[k], cov[k])
+			ll += np.log(inner)
+		return -ll			
+
+	def log_likelihood_lse(self, x, mu, cov, pi):
+		ll = 0.
+		for i in range(x.shape[0]):
+			inner = 0.
+			for k in range(len(mu)):
+				inner += np.exp(np.log(pi[k]) + self.logmvn(x[i,:], mu[k], cov[k]))
+			ll += np.log(inner)
+		return ll
+
+	def gmm(self, max_iter=100, tol=0.0001):
 		converged = False
 		iteration = 0
 		errors = []
-		likelihood = []
+		likelihood = [np.inf]
 		while not converged and iteration < max_iter:
 			iteration += 1
 			print "iteration:", iteration
@@ -115,13 +132,16 @@ class EMGMM:
 			self.cov = self.compute_cov(self.w, self.x, self.mu)
 			self.pi = self.compute_mixing_probabilities(self.w)
 
-			# TODO implement log-likelihood function and use it to determine convergence
-			# if assignments_changed == False:
-				# converged=True
-			# ll = self.log_likelihood(self.x, self.pi, self.mu, self.cov)
-			ll = 0.
+			# Determine convergence
+			ll = self.log_likelihood(self.x, self.mu, self.cov, self.pi)
+			print ll
 			likelihood.append(ll)
+			if np.abs(likelihood[iteration-1]-ll)<tol:
+				print "converged"
+				print likelihood[iteration-1]
+				converged=True
 
+			# Assign labels & calculate errors
 			self.assign_clusters(self.w)
 			err = ErrorModel(self.predicted_labels, self.actual_labels).zero_one_loss()
 			errors.append(err) 
@@ -129,9 +149,9 @@ class EMGMM:
 		return likelihood, errors
 
 	def assign_clusters(self, w):
-		clusters = np.argmax(w, axis=1)
-		self.predicted_clusters = clusters
-		return clusters
+		labels = np.argmax(w, axis=1)
+		self.predicted_labels = labels
+		return labels
 
 	def plot_clustering_2D(self, savefile="plot.png"):
 		print "plotting clusters..."
@@ -160,26 +180,28 @@ class EMGMM:
 				 (0.61960, 0.85490, 0.89803)]
 		
 		# Separate out the points in x by the cluster assignments in Z
-		for i,c in enumerate(self.predicted_clusters):
-			clusters[c].append(self.x[i])
+		for i,c in enumerate(self.predicted_labels):
+			clusters[c].append(self.x[i,:])
 		fig, ax = plt.subplots()
 
 		for k in range(self.k):
-			x1 = np.array(clusters[k]).T[0]
-			x2 = np.array(clusters[k]).T[1]
-			if x1.size > 0 and x2.size > 0: # Can happen for large K
+			print "k", k
+			if len(clusters[k]) > 0:
+				print "k made it", k
+				x1 = np.array(clusters[k]).T[0]
+				x2 = np.array(clusters[k]).T[1]
 				plt.scatter(x1, x2, figure=fig, color=colors[k])
 				plt.scatter(self.mu[k,0], self.mu[k,1], figure=fig, color='black', marker="+")
 				center = (self.mu[k,0], self.mu[k,1])
-				eigvals, eigvecs = np.linalg.eigh(self.cov[k])
-        		eigvecs[eigvals.argsort()[::-1]]
+				eigvals,eigvec = np.linalg.eigh(self.cov[k])
+        		eigvec[eigvals.argsort()[::-1]]
         		eigvals[eigvals.argsort()[::-1]]
-        		angle = np.degrees(np.arctan2(*eigvecs[:,0][::-1]))
+        		angle = np.degrees(np.arctan2(*eigvec[:,0][::-1]))
         		width, height = 2 * 1.5 * np.sqrt(eigvals) # capture points within 1.5 st. dev.
         		e = Ellipse(xy=center, width=width, height=height, angle=angle)
         		e.set_alpha(95)
     			e.set_facecolor(colors[k])
-        		ax.add_artist(e)
+        		plt.add_artist(e)
 		fig.savefig(savefile, format="png")
 		plt.close()
 		return
@@ -204,9 +226,9 @@ def main():
 
 		# Plot likelihoods
 		fig, ax = plt.subplots()
-		ax.plot(range(len(likelihood)),likelihood)
+		plt.plot(range(len(likelihood)),likelihood)
 		plt.xlabel("Number of iterations")
-		plt.ylabel("Likelihood")
+		plt.ylabel("Negative Log-Likelihood")
 		plt.savefig("2d_gmm_ll.png")
 
 	if run_section == "bbc":
@@ -220,18 +242,18 @@ def main():
 
 		# Run kmeans
 		em = EMGMM(len(centers), data, classes)
-		likelihood, error = em.gmm(max_iter=15)
+		likelihood, error = em.gmm(max_iter=100, tol=100)
 
 		# Plot likelihoods
 		fig, ax = plt.subplots()
-		ax.plot(range(len(likelihood)),likelihood)
+		plt.plot(range(len(likelihood)),likelihood)
 		plt.xlabel("Number of iterations")
-		plt.ylabel("Likelihood")
+		plt.ylabel("Negative Log-Likelihood")
 		plt.savefig("bbc_gmm_ll.png")
 
 		# Plot classification error
 		fig, ax = plt.subplots()
-		ax.plot(range(len(error)), error)
+		plt.plot(range(len(error)), error)
 		plt.xlabel("Number of iterations")
 		plt.ylabel("Classification error (0/1 loss)")
 		plt.savefig("bbc_gmm_01loss.png")
