@@ -219,30 +219,33 @@ def main():
 
 	if run_section == "bbc":
 		# Load data
-		td = TermDocument("bbc.mtx")
-		data = td.convert_to_tfidf(td.matrix)
 		centers = np.loadtxt("bbc.centers")
 		centers = [centers[i,:] for i in range(centers.shape[0])]
 		classes = np.loadtxt("bbc.classes", dtype=int)[:,1]
+		print classes
 		terms = np.loadtxt("bbc.terms", dtype=str)
+		td = TermDocument("bbc.mtx", classes)
+		data = td.convert_to_tfidf(td.matrix)
 
-		# Run kmeans
-		em = EMGMM(len(centers), data, classes)
-		likelihood, error = em.gmm(max_iter=100, tol=5000)
+		tfidf = td.average_tfidf_by_class(classes, td.matrix)
 
-		# Plot likelihoods
-		fig, ax = plt.subplots()
-		plt.plot(range(len(likelihood)),likelihood)
-		plt.xlabel("Number of iterations")
-		plt.ylabel("Negative Log-Likelihood")
-		plt.savefig("bbc_gmm_ll.png")
+		# # Run kmeans
+		# em = EMGMM(len(centers), data, classes)
+		# likelihood, error = em.gmm(max_iter=50, tol=500)
 
-		# Plot classification error
-		fig, ax = plt.subplots()
-		plt.plot(range(len(error)), error)
-		plt.xlabel("Number of iterations")
-		plt.ylabel("Classification error (0/1 loss)")
-		plt.savefig("bbc_gmm_01loss.png")
+		# # Plot likelihoods
+		# fig, ax = plt.subplots()
+		# plt.plot(range(len(likelihood)),likelihood)
+		# plt.xlabel("Number of iterations")
+		# plt.ylabel("Negative Log-Likelihood")
+		# plt.savefig("bbc_gmm_ll.png")
+
+		# # Plot classification error
+		# fig, ax = plt.subplots()
+		# plt.plot(range(len(error)), error)
+		# plt.xlabel("Number of iterations")
+		# plt.ylabel("Classification error (0/1 loss)")
+		# plt.savefig("bbc_gmm_01loss.png")
 
 
 if __name__ == '__main__':
