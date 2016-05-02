@@ -3,7 +3,6 @@ import random
 from scipy.stats import multivariate_normal
 from matplotlib.patches import Ellipse
 from matplotlib import pyplot as plt
-from scipy.misc import logsumexp
 from TermDocumentUtil import TermDocument
 from ErrorUtil import ErrorModel
 
@@ -12,7 +11,6 @@ class EMGMM:
 		self.k = k
 		self.x = x
 		self.actual_labels = labels
-		self.predicted_labels = np.zeros_like(labels)
 		self.w = np.zeros((x.shape[0], k), dtype=np.float64)# Can be 0, gets updated right away
 		self.mu = self.init_mu_kmeans_plus_plus(k, x)		# Initialize as in kmeans++
 		self.pi = np.ones(k, dtype=np.float64) / k 			# Initialize to uniform
@@ -65,7 +63,7 @@ class EMGMM:
 
 	def compute_means(self, w, x):
 		mu = w.T.dot(x)
-		w_sum = np.sum(w, axis=0) + 1
+		w_sum = np.sum(w, axis=0)
 		for d in range(mu.shape[1]):
 			mu[:,d] /= w_sum
 		assert len(mu) == np.shape(w)[1]
@@ -105,18 +103,9 @@ class EMGMM:
 			for k in range(len(mu)):
 				inner += pi[k] * self.mvn(x[i,:], mu[k], cov[k])
 			ll += np.log(inner)
-		return -ll			
+		return -ll	
 
-	def log_likelihood_lse(self, x, mu, cov, pi):
-		ll = 0.
-		for i in range(x.shape[0]):
-			inner = 0.
-			for k in range(len(mu)):
-				inner += np.exp(np.log(pi[k]) + self.logmvn(x[i,:], mu[k], cov[k]))
-			ll += np.log(inner)
-		return ll
-
-	def gmm(self, max_iter=100, tol=0.0001):
+	def gmm(self, max_iter=100, tol=0.01):
 		converged = False
 		iteration = 0
 		errors = []
@@ -143,15 +132,15 @@ class EMGMM:
 
 			# Assign labels & calculate errors
 			self.assign_clusters(self.w)
-			err = ErrorModel(self.predicted_labels, self.actual_labels).zero_one_loss()
+			err = ErrorModel(self.predicted_clusters, self.actual_labels).zero_one_loss()
 			errors.append(err) 
 
 		return likelihood, errors
 
 	def assign_clusters(self, w):
-		labels = np.argmax(w, axis=1)
-		self.predicted_labels = labels
-		return labels
+		clusters = np.argmax(w, axis=1)
+		self.predicted_clusters = clusters
+		return clusters
 
 	def plot_clustering_2D(self, savefile="plot.png"):
 		print "plotting clusters..."
@@ -180,28 +169,25 @@ class EMGMM:
 				 (0.61960, 0.85490, 0.89803)]
 		
 		# Separate out the points in x by the cluster assignments in Z
-		for i,c in enumerate(self.predicted_labels):
-			clusters[c].append(self.x[i,:])
+		for i,c in enumerate(self.predicted_clusters):
+			clusters[c].append(self.x[i])
 		fig, ax = plt.subplots()
 
 		for k in range(self.k):
-			print "k", k
-			if len(clusters[k]) > 0:
-				print "k made it", k
-				x1 = np.array(clusters[k]).T[0]
-				x2 = np.array(clusters[k]).T[1]
-				plt.scatter(x1, x2, figure=fig, color=colors[k])
-				plt.scatter(self.mu[k,0], self.mu[k,1], figure=fig, color='black', marker="+")
+			x1 = np.array(clusters[k]).T[0]
+			x2 = np.array(clusters[k]).T[1]
+			if x1.size > 0 and x2.size > 0: # Can happen for large K
+				plt.scatter(x1, x2, figure=fig, color=colors[k])#random.choice(colors))
 				center = (self.mu[k,0], self.mu[k,1])
-				eigvals,eigvec = np.linalg.eigh(self.cov[k])
-        		eigvec[eigvals.argsort()[::-1]]
+				eigvals, eigvecs = np.linalg.eigh(self.cov[k])
+        		eigvecs[eigvals.argsort()[::-1]]
         		eigvals[eigvals.argsort()[::-1]]
-        		angle = np.degrees(np.arctan2(*eigvec[:,0][::-1]))
+        		angle = np.degrees(np.arctan2(*eigvecs[:,0][::-1]))
         		width, height = 2 * 1.5 * np.sqrt(eigvals) # capture points within 1.5 st. dev.
         		e = Ellipse(xy=center, width=width, height=height, angle=angle)
         		e.set_alpha(95)
     			e.set_facecolor(colors[k])
-        		plt.add_artist(e)
+        		ax.add_artist(e)
 		fig.savefig(savefile, format="png")
 		plt.close()
 		return
@@ -220,7 +206,7 @@ def main():
 
 		k = 3
 		em = EMGMM(k, points, labels)
-		likelihood, error = em.gmm(max_iter=100)
+		likelihood, errors = em.gmm(max_iter=100)
 		labels = em.assign_clusters(em.w)
 		em.plot_clustering_2D(savefile="2d_gmm.png")
 
@@ -242,7 +228,7 @@ def main():
 
 		# Run kmeans
 		em = EMGMM(len(centers), data, classes)
-		likelihood, error = em.gmm(max_iter=100, tol=100)
+		likelihood, error = em.gmm(max_iter=100, tol=5000)
 
 		# Plot likelihoods
 		fig, ax = plt.subplots()
