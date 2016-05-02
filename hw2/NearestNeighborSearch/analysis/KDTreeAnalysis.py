@@ -48,10 +48,11 @@ if __name__ == "__main__":
     n_test = 500
     # TODO: run tests here
 
-    alphas = [5., 10., 20.]
+    alphas = [1., 5., 10.]
     times = test_kd_tree(n, D, n_test, alphas)
 
-    print times
+    for time in times:
+        print time.method, time.n, time.D, time.alpha, time.avg_time, time.avg_distance
 
     # for m in [5, 10, 20]:
         # lsh = LocalitySensitiveHash(docdata, D, m)
