@@ -125,7 +125,7 @@ class EMGMM:
 			ll = self.log_likelihood(self.x, self.mu, self.cov, self.pi)
 			print ll
 			likelihood.append(ll)
-			if np.abs(likelihood[iteration-1]-ll)<tol:
+			if likelihood[iteration-1]<ll:
 				print "converged"
 				print likelihood[iteration-1]
 				converged=True
@@ -178,6 +178,7 @@ class EMGMM:
 			x2 = np.array(clusters[k]).T[1]
 			if x1.size > 0 and x2.size > 0: # Can happen for large K
 				plt.scatter(x1, x2, figure=fig, color=colors[k])#random.choice(colors))
+				plt.scatter(self.mu[k,0], self.mu[k,1], figure=fig, color='black', marker="+")
 				center = (self.mu[k,0], self.mu[k,1])
 				eigvals, eigvecs = np.linalg.eigh(self.cov[k])
         		eigvecs[eigvals.argsort()[::-1]]
@@ -206,7 +207,7 @@ def main():
 
 		k = 3
 		em = EMGMM(k, points, labels)
-		likelihood, errors = em.gmm(max_iter=100)
+		likelihood, errors = em.gmm(max_iter=500, tol=0.05)
 		labels = em.assign_clusters(em.w)
 		em.plot_clustering_2D(savefile="2d_gmm.png")
 
@@ -222,30 +223,30 @@ def main():
 		centers = np.loadtxt("bbc.centers")
 		centers = [centers[i,:] for i in range(centers.shape[0])]
 		classes = np.loadtxt("bbc.classes", dtype=int)[:,1]
-		print classes
 		terms = np.loadtxt("bbc.terms", dtype=str)
-		td = TermDocument("bbc.mtx", classes)
+		td = TermDocument("bbc.mtx", classes, terms)
 		data = td.convert_to_tfidf(td.matrix)
 
-		tfidf = td.average_tfidf_by_class(classes, td.matrix)
+		em = EMGMM(len(centers), data, classes)
+		likelihood, error = em.gmm(max_iter=50, tol=500)
 
-		# # Run kmeans
-		# em = EMGMM(len(centers), data, classes)
-		# likelihood, error = em.gmm(max_iter=50, tol=500)
+		# Run kmeans
+		em = EMGMM(len(centers), data, classes)
+		likelihood, error = em.gmm(max_iter=50, tol=500)
 
-		# # Plot likelihoods
-		# fig, ax = plt.subplots()
-		# plt.plot(range(len(likelihood)),likelihood)
-		# plt.xlabel("Number of iterations")
-		# plt.ylabel("Negative Log-Likelihood")
-		# plt.savefig("bbc_gmm_ll.png")
+		# Plot likelihoods
+		fig, ax = plt.subplots()
+		plt.plot(range(len(likelihood)),likelihood)
+		plt.xlabel("Number of iterations")
+		plt.ylabel("Negative Log-Likelihood")
+		plt.savefig("bbc_gmm_ll.png")
 
-		# # Plot classification error
-		# fig, ax = plt.subplots()
-		# plt.plot(range(len(error)), error)
-		# plt.xlabel("Number of iterations")
-		# plt.ylabel("Classification error (0/1 loss)")
-		# plt.savefig("bbc_gmm_01loss.png")
+		# Plot classification error
+		fig, ax = plt.subplots()
+		plt.plot(range(len(error)), error)
+		plt.xlabel("Number of iterations")
+		plt.ylabel("Classification error (0/1 loss)")
+		plt.savefig("bbc_gmm_01loss.png")
 
 
 if __name__ == '__main__':

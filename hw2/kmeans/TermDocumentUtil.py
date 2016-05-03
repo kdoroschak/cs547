@@ -2,10 +2,13 @@ import scipy.io as sio
 import numpy as np
 
 class TermDocument:
-	def __init__(self, filename):
+	def __init__(self, filename, class_assignments, labels):
 		self.is_sparse = True
 		self.is_tfidf = False
 		self.matrix = self.read_matrix_market(filename)
+		self.class_assignments = class_assignments
+		self.possible_classes = np.unique(class_assignments)
+		self.term_labels = labels
 
 	def read_matrix_market(self, filename):
 		self.sparse = True
@@ -25,6 +28,8 @@ class TermDocument:
 		self.matrix = tfidf
 		self.is_tfidf = True
 		self.is_sparse = False
+		print tfidf.shape
+		print tfidf[50,:]
 		return tfidf
 
 	def tf(self, t, d):
@@ -42,5 +47,41 @@ class TermDocument:
 	def tfidf(self, t, d, D):
 		tfidf = self.tf(t, d) * self.idf(t, D)
 		return tfidf
+
+	def average_tfidf_by_class(self, terms, classes, tfidf_matrix):
+		avg_tfidf = np.zeros((len(self.possible_classes), len(terms)))
+
+		docs_in_cluster = [[] for _ in self.possible_classes]
+		for i,c in enumerate(classes):
+			docs_in_cluster[c].append(tfidf_matrix[i,:])
+
+		print np.max(tfidf_matrix)
+		print np.sum(tfidf_matrix)/np.count_nonzero(tfidf_matrix)
+
+		for i,c in enumerate(classes):
+			size_of_cluster = len(docs_in_cluster[c])
+			for j,term in enumerate(terms):
+				avg_tfidf[c,j] += tfidf_matrix[i,j]
+			avg_tfidf[c,:] /= size_of_cluster
+
+		return avg_tfidf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	

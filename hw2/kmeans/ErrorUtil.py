@@ -34,9 +34,3 @@ class ErrorModel:
 			if self.predicted[i] == self.actual[i]: # TODO verify
 				loss += 1
 		return loss
-
-
-	# ====== Multiclass classification error ======
-	def zero_one_loss_multiclass(self):
-		loss = 0
-		return loss

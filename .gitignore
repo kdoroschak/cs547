@@ -22,3 +22,7 @@ hw2/kmeans/sim_docdata.zip
 *.jpeg
 
 Cloudera*
+
+*.zip
+
+hw2/kdorosch_cse547_hw2/*

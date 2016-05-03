@@ -10,8 +10,8 @@ class KMeans:
 	def __init__(self, k, Z, x, init_method="random_init_centers", centers=None):
 		self.k = k
 		self.Z_actual = Z
-		self.Z = np.zeros_like(Z) # cluster assignments (len(Z) == len(x))	
-		self.x = x # data points -- list of tuples
+		self.Z = np.zeros_like(Z) 
+		self.x = x 
 		if init_method == "random_init_centers":
 			self.mu = self.random_init_centers(k, x)
 		elif init_method == "kmeans_plus_plus_init":
@@ -19,7 +19,7 @@ class KMeans:
 		elif init_method == "given":
 			if centers is None:
 				raise TypeError("Must specify centers.")
-			self.mu = centers 	# Should be a list of numpy arrays
+			self.mu = centers 	
 		else:
 			raise NameError(init_method + " is not defined.")
 
@@ -160,7 +160,7 @@ class KMeans:
 		return ss
 
 def main():
-	run_section = "partc_d"
+	run_section = "bbc_terms"
 
 	if run_section == "partb":
 		# Load data
@@ -221,6 +221,25 @@ def main():
 		plt.xlabel("Number of iterations")
 		plt.ylabel("Classification error (0/1 loss)")
 		plt.savefig("bbc_kmeans_01loss.png")
+
+
+	elif run_section == "bbc_terms":
+
+		centers = np.loadtxt("bbc.centers")
+		centers = [centers[i,:] for i in range(centers.shape[0])]
+		classes = np.loadtxt("bbc.classes", dtype=int)[:,1]
+		terms = np.loadtxt("bbc.terms", dtype=str)
+		td = TermDocument("bbc.mtx", classes, terms)
+		data = td.convert_to_tfidf(td.matrix)
+
+		averages = td.average_tfidf_by_class(terms, classes, data)
+		for c in range(averages.shape[0]):
+			print "c=",c
+			tfidf_by_term = averages[c,:]
+			highest = np.argsort(tfidf_by_term)[-5:]
+			top5_tfidf = tfidf_by_term[highest][::-1]
+			top5_labels = terms[highest][::-1]
+			
 
 
 
